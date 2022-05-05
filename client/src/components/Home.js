@@ -32,7 +32,6 @@ const Home = ({ user, logout }) => {
     conversations.forEach((convo) => {
       currentUsers[convo.otherUser.id] = true;
     });
-
     const newState = [...conversations];
     users.forEach((user) => {
       // only create a fake convo if we don't already have a convo with this user
@@ -62,16 +61,16 @@ const Home = ({ user, logout }) => {
     });
   };
 
-  const postMessage = (body) => {
+  const postMessage = async(body) => {
     try {
-      const data = saveMessage(body);
+      const data = await saveMessage(body);
 
       if (!body.conversationId) {
         addNewConvo(body.recipientId, data.message);
       } else {
         addMessageToConversation(data);
       }
-
+      // sending data to socket 
       sendMessage(data, body);
     } catch (error) {
       console.error(error);
@@ -80,20 +79,22 @@ const Home = ({ user, logout }) => {
 
   const addNewConvo = useCallback(
     (recipientId, message) => {
-      conversations.forEach((convo) => {
-        if (convo.otherUser.id === recipientId) {
-          convo.messages.push(message);
-          convo.latestMessageText = message.text;
-          convo.id = message.conversationId;
-        }
+      const newList = conversations.map((convo) => {
+          const element = convo
+          if (convo.otherUser.id === recipientId) {
+            element.messages = [ ...element.messages, message]
+            convo.latestMessageText = message.text;
+            convo.id = message.conversationId;
+          }
+          return element
       });
-      setConversations(conversations);
+      setConversations(newList);
     },
     [setConversations, conversations]
   );
 
   const addMessageToConversation = useCallback(
-    (data) => {
+    async (data) => {
       // if sender isn't null, that means the message needs to be put in a brand new convo
       const { message, sender = null } = data;
       if (sender !== null) {
@@ -106,13 +107,15 @@ const Home = ({ user, logout }) => {
         setConversations((prev) => [newConvo, ...prev]);
       }
 
-      conversations.forEach((convo) => {
-        if (convo.id === message.conversationId) {
-          convo.messages.push(message);
-          convo.latestMessageText = message.text;
-        }
-      });
-      setConversations(conversations);
+      const newList = conversations.map(convo => {
+          const element = convo
+          if (element.id === message.conversationId) {
+            element.messages = [ ...element.messages, message]
+            convo.latestMessageText = message.text;
+          }
+          return element
+      })
+      setConversations(newList);
     },
     [setConversations, conversations]
   );
@@ -213,6 +216,7 @@ const Home = ({ user, logout }) => {
         />
         <ActiveChat
           activeConversation={activeConversation}
+          // conversation={conversation}
           conversations={conversations}
           user={user}
           postMessage={postMessage}
