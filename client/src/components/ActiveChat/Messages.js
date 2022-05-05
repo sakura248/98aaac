@@ -4,7 +4,10 @@ import { SenderBubble, OtherUserBubble } from '.';
 import moment from 'moment';
 
 const Messages = (props) => {
+  
   const { messages, otherUser, userId } = props;
+
+  // const sortedMessages = messages.sort((a,b) => a.createdDate < b.createdDate ? 1 : -1)
 
   return (
     <Box>
